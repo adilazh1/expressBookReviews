@@ -4,10 +4,27 @@ let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
+// Function to check if the user exists
+const doesExist = (username) => {
+  let userswithsamename = users.filter((user) => {
+    return user.username === username;
+  });
+  return userswithsamename.length > 0;
+};
 
 public_users.post("/register", (req,res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+  const username = req.body.username;
+  const password = req.body.password;
+
+  if (username && password) {
+    if (!doesExist(username)) {
+      users.push({ "username": username, "password": password });
+      return res.status(200).json({ message: "User successfully registered. Now you can login" });
+    } else {
+      return res.status(404).json({ message: "User already exists!" });
+    }
+  }
+  return res.status(404).json({ message: "Unable to register user." });
 });
 
 // Get the book list available in the shop
@@ -73,6 +90,23 @@ public_users.get('/review/:isbn',function (req, res) {
   }else{
     res.status(300).json({message: "Book not found"});
   }
+});
+
+// Task 10 
+// Add the code for getting the list of books available in the shop (done in Task 1) using Promise callbacks or async-await with Axios
+
+function getBookList(){
+  return new Promise((resolve,reject)=>{
+    resolve(books);
+  })
+}
+
+// Get the book list available in the shop
+public_users.get('/',function (req, res) {
+  getBookList().then(
+    (bk)=>res.send(JSON.stringify(bk, null, 4)),
+    (error) => res.send("denied")
+  );  
 });
 
 module.exports.general = public_users;
