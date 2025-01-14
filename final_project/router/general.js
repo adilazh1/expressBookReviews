@@ -1,17 +1,8 @@
 const express = require('express');
 let books = require("./booksdb.js");
-const jwt = require('jsonwebtoken');//is not necesary because public_user not need to login like in /costumer
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
-
-// Function to check if the user is authenticated
-const authenticatedUser = (username, password) => {
-  let validusers = users.filter((user) => {
-    return user.username === username && user.password === password;
-  });
-  return validusers.length > 0;
-};
 
 // Function to check if the user exists
 const doesExist = (username) => {
@@ -29,7 +20,7 @@ public_users.post("/register", (req,res) => {
   if (username && password) {
     if (!doesExist(username)) {
       users.push({ "username": username, "password": password });
-      return res.status(200).json({ message: "User successfully registered. Now you can login" });
+      return res.status(200).json({ message: "User successfully registered." });
     } else {
       return res.status(404).json({ message: "User already exists!" });
     }
@@ -37,30 +28,6 @@ public_users.post("/register", (req,res) => {
   return res.status(404).json({ message: "Unable to register user." });
 });
 
-//only registered users can login
-public_users.post("/login", (req,res) => {
-  const username = req.body.username;
-  const password = req.body.password;
-
-  if (!username || !password) {
-    return res.status(404).json({ message: "Error logging in" });
-  }
-
-  if (authenticatedUser(username, password)) {
-    let accessToken = jwt.sign({
-      data: password
-    }, 'access', { expiresIn: "1h" });
-
-    req.session.authorization = {
-      accessToken, username
-    };
-    return res.status(200).send("User successfully logged in");
-  } else {
-    return res.status(208).json({ message: "Invalid Login. Check username and password" });
-  }
-});
-// last code exists dans auth_users.js, but to acces to it, we need put /customer in the url. 
-// And it's not necesary give acces to public users by login, only register is OK, so code of /login is not important.
 
 // Get the book list available in the shop
 public_users.get('/',function (req, res) {
@@ -165,5 +132,56 @@ public_users.get('/isbn/:isbn',function (req, res) {
     (error) => res.send(error)
   )
  });
+
+ // Task 12
+// Add the code for getting the book details based on Author (done in Task 3) using Promise callbacks or async-await with Axios.
+
+function getFromAuthor(author){
+  let output = [];
+  return new Promise((resolve,reject)=>{
+    for (var isbn in books) {
+      let book_ = books[isbn];
+      if (book_.author === author){
+        output.push(book_);
+      }
+    }
+    resolve(output);  
+  })
+}
+
+// Get book details based on author
+public_users.get('/author/:author',function (req, res) {
+  const author = req.params.author;
+  getFromAuthor(author)
+  .then(
+    result =>res.send(JSON.stringify(result, null, 4))
+  );
+});
+
+// Task 13
+// Add the code for getting the book details based on Title (done in Task 4) using Promise callbacks or async-await with Axios.
+
+
+function getFromTitle(title){
+  let output = [];
+  return new Promise((resolve,reject)=>{
+    for (var isbn in books) {
+      let book_ = books[isbn];
+      if (book_.title === title){
+        output.push(book_);
+      }
+    }
+    resolve(output);  
+  })
+}
+
+// Get all books based on title
+public_users.get('/title/:title',function (req, res) {
+  const title = req.params.title;
+  getFromTitle(title)
+  .then(
+    result =>res.send(JSON.stringify(result, null, 4))
+  );
+});
 
 module.exports.general = public_users;
